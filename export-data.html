@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Save a backup · Ghibli Calendar</title>
+<style>
+  :root{--ink:#3A362E;--soft:#6B6458;--paper:#F5F1E8;--card:#FBF8F2;--sage:#7A8D6B;--sage-deep:#5B7052;--line:rgba(58,54,46,.12)}
+  @media (prefers-color-scheme:dark){:root{--ink:#EAE6D9;--soft:#C9C2B0;--paper:#1B211C;--card:#232B24;--line:rgba(234,230,217,.12)}}
+  body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font-family:Georgia,"Times New Roman",serif;display:flex;justify-content:center;padding:28px 18px}
+  main{max-width:420px;width:100%}
+  h1{font-size:26px;margin:0 0 6px}
+  p{color:var(--soft);line-height:1.5}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-top:18px}
+  button{width:100%;border:0;border-radius:999px;background:var(--sage);color:#fff;font:600 16px Georgia,serif;padding:14px;margin-top:10px}
+  button.alt{background:transparent;color:var(--sage-deep);border:1px solid var(--sage)}
+  #msg{margin-top:12px;color:var(--sage-deep)}
+</style>
+</head>
+<body>
+<main>
+  <h1>🌿 Save a backup</h1>
+  <p>This page only <b>reads</b> the calendar you already keep in this browser and saves it as a file. It changes nothing.</p>
+  <div class="card">
+    <div id="info">Looking for your calendar…</div>
+    <button id="dl">Download backup file</button>
+    <button id="cp" class="alt">Copy instead</button>
+    <div id="msg"></div>
+  </div>
+  <p>Next: open the Ghibli Calendar app, choose <b>Choose backup file</b> and pick <b>ghibli-calendar-backup.json</b> from your Downloads.</p>
+</main>
+<script>
+(function(){
+  var KEY="ghibliforest_v1", raw=null, info=document.getElementById("info"), msg=document.getElementById("msg");
+  try{ raw=localStorage.getItem(KEY); }catch(e){}
+  if(!raw){ info.textContent="No calendar data found in this browser. Open this page in the same browser (and from the same address) where you use your calendar."; }
+  else{
+    try{ var s=JSON.parse(raw); info.textContent="Found "+((s.tasks||[]).length)+" tasks and "+((s.events||[]).length)+" events."; }
+    catch(e){ info.textContent="Found your calendar data."; }
+  }
+  document.getElementById("dl").onclick=function(){
+    if(!raw){ msg.textContent="Nothing to save."; return; }
+    var a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([raw],{type:"application/json"}));
+    a.download="ghibli-calendar-backup.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    msg.textContent="Saved to your Downloads ✓";
+  };
+  document.getElementById("cp").onclick=function(){
+    if(!raw){ msg.textContent="Nothing to copy."; return; }
+    (navigator.clipboard?navigator.clipboard.writeText(raw):Promise.reject()).then(
+      function(){ msg.textContent="Copied. Paste it into a note and save it as a .json file."; },
+      function(){ msg.textContent="Copy was blocked — please use the download button."; });
+  };
+})();
+</script>
+</body>
+</html>

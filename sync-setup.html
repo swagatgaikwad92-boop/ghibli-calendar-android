@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cloud sync · Ghibli Calendar</title>
+<style>
+  :root{--ink:#3A362E;--soft:#6B6458;--faint:#A39C8C;--paper:#F5F1E8;--card:#FBF8F2;--sage:#7A8D6B;--sage-deep:#5B7052;--terracotta:#C17B4A;--line:rgba(58,54,46,.10)}
+  @media (prefers-color-scheme:dark){:root{--ink:#EAE6D9;--soft:#C9C2B0;--faint:#8B8676;--paper:#1B211C;--card:#232B24;--line:rgba(234,230,217,.10)}}
+  body{margin:0;min-height:100vh;background:var(--paper);color:var(--ink);font-family:Georgia,"Times New Roman",serif;display:flex;justify-content:center;padding:26px 18px 40px}
+  main{max-width:440px;width:100%}
+  h1{font-size:26px;margin:0 0 6px}
+  p,li{color:var(--soft);line-height:1.5;font-size:15px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;margin-top:16px}
+  label{display:block;font-size:13px;color:var(--soft);margin:12px 0 4px}
+  input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);font:16px Georgia,serif;padding:12px}
+  button{width:100%;border:0;border-radius:999px;background:var(--sage);color:#fff;font:600 16px Georgia,serif;padding:14px;margin-top:14px}
+  button.alt{background:transparent;color:var(--sage-deep);border:1px solid var(--sage)}
+  #status{margin-top:12px;font-size:14px;color:var(--sage-deep);white-space:pre-wrap}
+  #status.err{color:var(--terracotta)}
+  small{color:var(--faint)}
+</style>
+</head>
+<body>
+<main>
+  <h1>☁️ Cloud sync</h1>
+  <p>Optional. Keeps this calendar identical on every device where you switch it on, using one private file in <b>your own</b> GitHub repository. Nothing changes until you save below, and a safety copy is made before this device's data is ever changed.</p>
+
+  <div class="card">
+    <p><b>One-time GitHub setup</b></p>
+    <ol>
+      <li>Create a <b>private</b> repository, e.g. <code>ghibli-calendar-data</code>.</li>
+      <li>GitHub → Settings → Developer settings → Fine-grained tokens → new token. Repository access: <b>only that repo</b>. Permission: <b>Contents → Read and write</b>.</li>
+      <li>Fill in the form below on <b>each</b> device.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <label for="owner">GitHub username</label><input id="owner" autocapitalize="none" autocomplete="off">
+    <label for="repo">Private data repository</label><input id="repo" placeholder="ghibli-calendar-data" autocapitalize="none" autocomplete="off">
+    <label for="path">File name in that repo</label><input id="path" value="ghibli-data.json" autocapitalize="none" autocomplete="off">
+    <label for="token">Token</label><input id="token" type="password" autocomplete="off" placeholder="github_pat_…">
+    <button id="save">Save &amp; sync now</button>
+    <button id="relink" class="alt">Re-link (safe merge, never deletes)</button>
+    <button id="off" class="alt">Disconnect this device</button>
+    <div id="status"></div>
+    <small>Disconnecting only stops syncing. Your calendar data stays on this device.</small>
+  </div>
+
+  <p><a href="./" style="color:var(--sage-deep)">← Back to the calendar</a></p>
+</main>
+<script src="sync.js"></script>
+<script>
+(function(){
+  var ls=localStorage, $=function(i){return document.getElementById(i)}, st=$("status");
+  var CFG="gf_sync_cfg_v1", BASE="gf_sync_base_v1", STATUS="gf_sync_status_v1";
+  function show(msg,err){ st.textContent=msg; st.className=err?"err":""; }
+  try{ var c=JSON.parse(ls.getItem(CFG)||"null"); if(c){ $("owner").value=c.owner||""; $("repo").value=c.repo||""; $("path").value=c.path||"ghibli-data.json"; $("token").placeholder="(saved — leave empty to keep)"; } }catch(e){}
+  try{ var s=JSON.parse(ls.getItem(STATUS)||"null"); if(s) show((s.ok?"Last sync: ":"Last problem: ")+s.msg+"\n"+s.at, !s.ok); }catch(e){}
+
+  function save(){
+    var old=null; try{ old=JSON.parse(ls.getItem(CFG)||"null"); }catch(e){}
+    var cfg={ owner:$("owner").value.trim(), repo:$("repo").value.trim(), path:($("path").value.trim()||"ghibli-data.json"), token:$("token").value.trim()||(old&&old.token)||"" };
+    if(!cfg.owner||!cfg.repo||!cfg.token){ show("Please fill in username, repository and token.",true); return false; }
+    ls.setItem(CFG, JSON.stringify(cfg)); return true;
+  }
+  function runSync(){
+    show("Syncing…");
+    var env={ ls:ls, fetch:function(u,o){return fetch(u,o)}, now:function(){return Date.now()}, selfWrite:function(){}, apply:function(){} };
+    window.GFSync.syncOnce(env).then(function(r){
+      if(r.skipped) show("Not configured.",true);
+      else if(r.ok) show("✓ Synced."+(r.localChanged?" This device received changes from the cloud (a safety copy was kept).":"")+"\nOpen the calendar to see it.");
+      else show("✗ "+r.error,true);
+    });
+  }
+  $("save").onclick=function(){ if(save()) runSync(); };
+  $("relink").onclick=function(){ if(save()){ ls.removeItem(BASE); runSync(); } };
+  $("off").onclick=function(){ ls.removeItem(CFG); ls.removeItem(BASE); ls.removeItem(STATUS); show("Disconnected. Your calendar data was not touched."); };
+})();
+</script>
+</body>
+</html>

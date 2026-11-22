@@ -1,0 +1,67 @@
+== Android data + board logic ==
+PASS  default order = website order (time, untimed last)
+PASS  T1 reorder saved: C,A,B
+PASS  T1 reorder still there after reopening board
+PASS  T1 unknown task fields preserved
+PASS  T2 on-screen: A is under the Tomorrow heading
+PASS  T2 cannot drag above the first heading
+PASS  T2 A rescheduled to tomorrow
+PASS  T3 B is done, date unchanged
+PASS  T3 doneAt + streak updated like the website
+PASS  T3 B shows in Completed section on a fresh board
+PASS  T3 B back to not-done in Today
+PASS  T3 B first in Today
+PASS  T4 empty sections have a drop slot
+PASS  T4 dropped into empty Tomorrow (from above)
+PASS  T4 Y moved up into Tomorrow (from below)
+PASS  T4 dropped into empty Today
+PASS  T5 order kept after website save; new task after ordered ones
+PASS  T6 stale web push rejected
+PASS  T6 web is flagged stale until it reloads
+PASS  T6 after reload web pushes are accepted again
+PASS  T7 no-op drop writes nothing
+PASS  T8 stale order ignored: T(08:00) then B(10:00) on tomorrow
+PASS  T9 widget ? moves B above A
+PASS  T9 widget ? moves A to tomorrow
+PASS  T10 daily safety copy created
+PASS  T10 restore works
+
+26 passed, 0 failed
+
+== Cloud-sync merge (simulated GitHub) ==
+PASS  1 inert when not configured (no network, no change)
+PASS  2 first sync creates cloud file
+PASS  2 device-only keys never uploaded
+PASS  2 local data untouched, no reload
+PASS  3 union on first sync (both kept)
+PASS  3 backup made + reload requested
+PASS  3 device-only keys of B preserved
+PASS  3 A receives B's task
+PASS  4 completion on A reaches B
+PASS  5 delete pushed to cloud
+PASS  5 delete reaches B
+PASS  6 both edits + new item present on both devices
+PASS  7 conflict resolved the same everywhere, no duplicates
+PASS  8 edit on B beats delete on A
+PASS  9 retries after 409 conflicts and succeeds
+PASS  10 corrupt cloud file => stop, local untouched, nothing uploaded
+PASS  11 401 => clear error, data untouched
+PASS  11 offline => no crash, data untouched
+PASS  12 refuses to wipe 9 of 10 items
+PASS  13 edit made during sync survives and reaches the other device
+PASS  14 repeated sync is a no-op (no reload, no upload)
+PASS  15 day notes merged, newest streak wins
+
+22 passed, 0 failed
+
+== Bridge script injected into the website ==
+PASS  injects native data into localStorage before the website loads
+PASS  website save is forwarded to the phone
+PASS  other keys are not forwarded
+PASS  load pushes current state once
+PASS  no native data => localStorage untouched
+PASS  Notification.permission maps to Android
+PASS  Notification.requestPermission resolves
+PASS  registration.showNotification becomes an Android notification
+
+8 passed, 0 failed

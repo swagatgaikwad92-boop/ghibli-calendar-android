@@ -1,0 +1,21 @@
+<resources>
+    <!-- Exact palette from core.css (day) -->
+    <color name="ink">#3A362E</color>
+    <color name="ink_soft">#6B6458</color>
+    <color name="ink_faint">#A39C8C</color>
+    <color name="paper">#F5F1E8</color>
+    <color name="paper2">#FBF8F2</color>
+    <color name="paper3">#EFE8D8</color>
+    <color name="sage">#7A8D6B</color>
+    <color name="sage_deep">#5B7052</color>
+    <color name="gold">#D9A94E</color>
+    <color name="terracotta">#C17B4A</color>
+    <color name="dusty_blue">#7C93A8</color>
+    <color name="lavender">#A093C2</color>
+    <color name="peach">#E3AE87</color>
+    <!-- glass-bg-strong / glass-border / line / task surface -->
+    <color name="glass">#C7FFFCF6</color>
+    <color name="glass_border">#99FFFFFF</color>
+    <color name="line">#1A3A362E</color>
+    <color name="row_bg">#59FFFFFF</color>
+</resources>

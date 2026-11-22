@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">Ghibli Calendar</string>
+    <string name="desc_small">Today’s date and your essential tasks.</string>
+    <string name="desc_medium">Today’s agenda: next event and tasks.</string>
+    <string name="desc_large">Full day: tasks, completed, events and what’s coming up.</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:background="@drawable/widget_bg" android:padding="12dp">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingBottom="4dp">
+            <LinearLayout android:id="@+id/w_header" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                <TextView android:id="@+id/w_weekday" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="serif" android:textColor="@color/ink_soft" android:textSize="13sp" />
+                <TextView android:id="@+id/w_date" android:layout_width="wrap_content" android:layout_height="wrap_content" android:fontFamily="serif" android:textStyle="bold" android:textColor="@color/ink" android:textSize="22sp" android:maxLines="1" />
+                <TextView android:id="@+id/w_count" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/sage_deep" android:textSize="11sp" />
+            </LinearLayout>
+            <TextView android:id="@+id/w_prev" android:layout_width="34dp" android:layout_height="34dp" android:gravity="center" android:text="‹" android:textColor="@color/sage_deep" android:textSize="22sp" android:background="@drawable/pill_btn" android:layout_marginStart="4dp" />
+            <TextView android:id="@+id/w_next" android:layout_width="34dp" android:layout_height="34dp" android:gravity="center" android:text="›" android:textColor="@color/sage_deep" android:textSize="22sp" android:background="@drawable/pill_btn" android:layout_marginStart="4dp" />
+            <TextView android:id="@+id/w_arrange" android:layout_width="34dp" android:layout_height="34dp" android:gravity="center" android:text="⇅" android:textColor="@color/sage_deep" android:textSize="17sp" android:background="@drawable/pill_btn" android:layout_marginStart="4dp" />
+            <TextView android:id="@+id/w_add" android:layout_width="34dp" android:layout_height="34dp" android:gravity="center" android:text="+" android:textColor="@color/sage_deep" android:textSize="20sp" android:background="@drawable/pill_btn" android:layout_marginStart="4dp" />
+        </LinearLayout>
+        <ListView android:id="@+id/list" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:divider="@null" android:dividerHeight="0dp" android:scrollbars="none"
+            android:listSelector="@android:color/transparent" />
+    </LinearLayout>
+</FrameLayout>
