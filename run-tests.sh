@@ -7,3 +7,4 @@ javac -proc:none -d out -sourcepath stubs stubs/com/ghibli/calendar/LogicTest.ja
 echo "== Android data + board logic =="; java -cp out com.ghibli.calendar.LogicTest
 echo; echo "== Cloud-sync merge (simulated GitHub) =="; node sync-test.js
 echo; echo "== Bridge script injected into the website =="; node bridge-test.js
+echo; echo "== Diagnostic page verdict logic (fake browser) =="; node diag-test.js

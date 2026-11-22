@@ -1,76 +1,198 @@
-# Ghibli Calendar — Android widget (version 2, reviewed)
+# 🌿 Ghibli Forest — Calendar, Tasks & Day Log
 
-Your calendar website's colours, CSS, layout and design are **not touched**.
-Nothing in this package has been run on a real phone or built by the real Android toolchain (see "What was and was not tested").
+A cozy, iOS-glassmorphism calendar + task + reminder + day-journal PWA with a
+tiny forest-spirit companion. Fully functional, works offline, installable
+to your home screen.
 
-## What's in this ZIP
-| File / folder | What it is |
+## What was broken
+
+Your live site was missing all styling because the `styles/`, `scripts/`,
+and `icons/` **folders got flattened** during upload (GitHub's drag-and-drop
+uploader does this sometimes) — so `index.html` was still asking for files
+like `styles/core.css`, but that folder no longer existed on the server,
+only loose files at the root. The HTML and JS still loaded fine (which is
+why you saw text and working buttons), but every CSS file 404'd, so the
+page fell back to unstyled default browser styles.
+
+**The fix:** every file in this package now lives directly in one flat
+folder — no subfolders at all — and every reference inside `index.html`,
+`manifest.json`, and `sw.js` points to plain filenames (`core.css`, not
+`styles/core.css`). This makes it upload-proof: there's nothing left for
+GitHub's uploader to flatten.
+
+## What's inside (all flat, no subfolders)
+
+```
+index.html            ← the whole app shell (all screens + sheets)
+manifest.json          ← PWA install config
+sw.js                   ← offline service worker (caches the app)
+core.css                 ← colors, type, glass system, layout tokens
+components.css            ← nav, cards, timeline, calendar grid, sheets
+themes.css                  ← day/night + seasonal atmosphere
+state.js                     ← data model + localStorage persistence
+calendar.js                   ← month/week date math
+companion.js                   ← the forest-spirit mascot (SVG, reactive)
+tasks.js                        ← task cards + swipe-to-complete/postpone
+search.js                        ← universal search
+render.js                         ← screen markup builders
+app.js                             ← navigation, forms, reminders, PWA install
+icon-192.png, icon-512.png, icon-180.png
+```
+
+Everything is plain HTML/CSS/JS — no build step, no framework, no bundler.
+All your data is stored on your own device in `localStorage`; nothing is
+sent anywhere.
+
+## 1. Upload to GitHub (exact steps)
+
+1. Go to your repository on GitHub (the one that publishes to
+   `https://yourusername.github.io`, or a project repo — either works).
+2. If you have old files there from the previous attempt (a `styles/`,
+   `scripts/`, or `icons/` folder, or an old `index.html`), **delete them
+   first** so nothing conflicts.
+3. Click **Add file → Upload files**.
+4. Drag in **all the files from this folder** — they're all loose files
+   now, so there's no folder structure that can get flattened or broken.
+5. Scroll down, write a commit message like "Fix styling — flat layout",
+   and click **Commit changes**.
+
+## 2. Turn on GitHub Pages
+
+1. In your repo, go to **Settings → Pages** (left sidebar).
+2. Under **Build and deployment → Source**, choose **Deploy from a
+   branch**.
+3. Under **Branch**, choose `main` and folder `/ (root)`, then **Save**.
+4. Wait about a minute, then visit your site.
+5. **If you had visited the broken version before**, do a hard refresh
+   (Ctrl/Cmd+Shift+R) or clear site data for that domain once — the
+   offline service worker may have a stale copy cached. After that first
+   hard refresh it stays fresh automatically.
+
+## 3. Install it on your phone
+
+- **iPhone (Safari):** open the link → tap the Share icon → **Add to Home
+  Screen**.
+- **Android (Chrome):** open the link → you'll see an **Install Ghibli
+  Forest** banner, or tap the ⋮ menu → **Add to Home screen**. The app
+  also shows an in-app **Install** button in Settings once your browser
+  is ready to install it.
+
+Once installed, it opens full-screen with no browser bar, and works
+offline.
+
+## What changed in this update
+
+Nothing about the Ghibli aesthetic, calendar, tasks, Day Log, Forest,
+search, mascot, animations, glassmorphism, DABSy sync, or your existing
+saved data was touched. Two things were added on top:
+
+### 1. Standalone PWA fixes
+
+- `manifest.json` gained `id`, `lang`, `categories`, and
+  `display_override: ["standalone","minimal-ui","browser"]` — extra
+  signals Android/Chrome use to decide how "installed" the app should
+  feel. `display: "standalone"` (already correct) and your icons/colors
+  were left as-is.
+- The app now uses `100dvh` (real visible viewport height on mobile,
+  falls back to `100vh` on older browsers) instead of plain `100vh`,
+  which was letting the browser's address bar eat into the layout.
+- The top bar, floating nav, and the 🌱 "Plant something" button now pad
+  themselves with `env(safe-area-inset-*)`, so they sit clear of notches,
+  camera cutouts, and Android's gesture bar instead of crowding them.
+- `overscroll-behavior-y: none` stops the page "bouncing"/showing browser
+  chrome on overscroll, which is one of the biggest things that makes a
+  PWA feel like "a website in a box" instead of a real app.
+
+### 2. Real notifications (new file: `notify.js`)
+
+A permission flow lives in **Settings → Notifications**: tap **Enable**
+once, and the browser's own permission prompt appears. If you dismiss or
+block it, the app never re-prompts (browsers don't allow that anyway) —
+it just tells you where to re-enable it. Notifications are delivered
+through the service worker (`reg.showNotification(...)`), not a plain
+`new Notification()`, so they work even when the tab isn't focused, and
+tapping one opens Ghibli Forest straight to that day.
+
+**Be direct about what's actually guaranteed**, because this matters for
+a static, backend-free app:
+
+| Situation | Reliability |
 |---|---|
-| `GhibliCalendarAndroid.zip` | The complete Android project. Upload it to GitHub **as a zip** (don't unzip). |
-| `build-apk.yml` | The GitHub build recipe (turns the project into an APK). |
-| `export-data.html` | Optional new page for your website repo: saves a backup of your Chrome data. |
-| `optional-website-sync/` | Optional cloud sync (read "Sync" below before using). Complete files, ready to upload. |
-| `verification/` | The tests I ran, and their results (`RESULTS.txt`). |
+| **A. App open** | Reliable — checked every 20s, plus instantly on reopen/focus. |
+| **B. App backgrounded** (tab/installed app still running, not force-closed) | Reliable on most browsers — timers are throttled but keep running. |
+| **C. App fully closed/killed** | **Best-effort only.** Uses the Periodic Background Sync API, which only exists on Chrome-based browsers on Android, only for an installed PWA, and only once Chrome decides you've engaged with the app enough (its own internal heuristic — there's no toggle for this). iOS Safari, Firefox, and desktop Chrome don't support it at all, so on those, a reminder only fires once you actually reopen the app (at which point it catches up immediately, so nothing is silently lost). |
 
-## 1. Sync — the honest picture
-The Android widget cannot read Chrome's storage, so there are two real options:
+**Why not just fix C properly:** truly reliable delivery to a fully
+closed app requires **Web Push** — the browser's OS-level push service
+(FCM/APNs under the hood) waking the service worker even when nothing is
+running. That needs a small server that holds a push subscription per
+device and sends it a payload at the right time (or a third-party push
+relay). That's a real backend, which you asked to avoid, and it's also
+the only architecture that can guarantee tier C — nothing purely
+client-side can. Periodic Background Sync above is the closest
+approximation GitHub Pages allows without one. If you ever do want true
+guaranteed background delivery, the smallest version of that backend
+would be: one small server (even a free-tier serverless function) that
+stores `{subscription, reminderTime}` and calls the Push API at the
+right time — everything else in this app stays exactly the same.
 
-**Option A — the app is your calendar (default, nothing extra to set up).** The app shows your same website and the widget shares its data. The Chrome PWA keeps its own separate copy. *Use the app from now on.* Your old Chrome data is moved in once with `export-data.html` (below). Safe and simple, but Chrome and the app are **not** synced with each other.
+Technical note: the service worker can't read `localStorage` (it's
+page-only), so `notify.js` mirrors your reminders into IndexedDB
+whenever one is added or checked, and the service worker reads *that*
+during a background sync — it never touches your `localStorage` data
+directly, and your reminders array in `localStorage` stays the single
+source of truth (IndexedDB is just a read mirror for the SW).
 
-**Option B — optional cloud sync through your own private GitHub repo.** This is the only way I found to also keep Chrome and the app in step without paying for or running a server. It needs these files added to your **website** repo: `sync.js`, `sync-setup.html`, and a replacement `index.html` that is your current file plus **one added line** (`<script src="sync.js"></script>`; I checked with a diff that nothing else changed). It does nothing until you enter a token in `sync-setup.html`.
-- How it protects your data: it merges (new items from both sides are kept, edits are kept, deletes are applied only if the other side did not edit that item), the first sync only *adds*, it keeps a backup before changing anything, it refuses to run if the cloud file is invalid, and it stops if a merge would delete most of your calendar.
-- Limits: it is **not instant** (page open, coming back to the app, and a few seconds after each change). A change made **in the widget** reaches the cloud/Chrome the next time you **open the app**, not while it's closed. If two devices edit the same task at the same moment, one edit wins. The token is stored in each browser, so use a fine-grained token for that one private repo only ("Contents: Read and write").
-- It was tested only against a **simulated** GitHub (22 checks), never against real GitHub.
-- If you don't want it, ignore the folder. Option A is complete without it.
+## Notification personality upgrade (new files: `voice.js`, `engine.js`)
 
-## 2. What I found and fixed in my first version
-1. **Widget/board showed old unfinished tasks inside "Today".** Your website doesn't — it shows only that day's tasks. Removed, so widget = website.
-2. **"Completed" was far from "Today"** (a very long drag). It now sits directly under Today.
-3. **Every drop re-numbered every section.** Now only sections that actually changed are saved, and a drop that changes nothing writes nothing.
-4. **Order could go wrong after the website moved a task.** Order is now remembered together with the day it was set for and ignored if the task is on another day.
-5. **A background copy of the website could overwrite a widget change** (e.g. its notification timer saving old data). Out-of-date saves are now refused, and the page is refreshed as soon as the widget/board changes data.
-6. **Opening a specific day while offline failed** (your service worker only has the home page cached). The app now falls back to the cached home page.
-7. **No safety net for your data.** The app now keeps a safety copy once a day and before every import/restore (last 12). Board → **Backups** restores one (your current data is saved first).
-8. **Updates might not install over the old app.** Each GitHub build now gets a higher version number; the signing key is fixed so updates keep your data.
-9. The build now prints the SDK it found and verifies the APK signature in the log.
+Reminders no longer say "Reminder: Study Physics at 5:30 PM." Instead:
 
-## 3. Drag and drop (Board → "⇅" button on the widget)
-Android widgets cannot do drag-and-drop, so drag lives on the Board screen. Press and hold a task, then drag it: up/down = reorder, onto another day's heading = reschedule, into **Completed** = mark done (drag out = not done). Empty days show a dashed "Drop a task here" slot. Every drop saves at once and refreshes the widgets.
-- Reordering is shared by the widget and the board. Your website's own list keeps its time order (changing that would mean editing the website). Tasks added later on the website appear after tasks you've arranged.
-- Verified by tests (real project code, simulated phone storage): move between days, into/out of Completed, reorder persists after reopening the board, empty sections accept drops from above and below, no-op drops write nothing, unknown task fields are preserved. **Not verified:** the actual finger gesture (Android's drag helper) — please try it.
+- **`voice.js`** — the wording layer. A pool of several rotating,
+  in-character lines per situation (upcoming, starting now, remaining
+  tasks, progress, next-up, overdue, completion, morning briefing,
+  evening wrap-up, streaks, "forest memory"). It picks from the pool each
+  time and avoids repeating the exact same line twice in a row. Always
+  uses your task/event's own title — never generic.
+- **`engine.js`** — the decision layer. Reads your actual events/tasks
+  each check and decides *if* a notification is warranted, using a
+  dedupe log (`LF.state.notifyLog`, auto-pruned after 3 days) so nothing
+  repeats within the same day. Runs on the same cadence as before (every
+  ~20s while open, instantly on reopen/focus) — the reliability tiers
+  below don't change.
+- **Settings → Notifications** now has seven individually toggleable
+  categories (morning briefing, upcoming, starting, remaining/progress,
+  overdue, evening wrap-up, completion) — all on by default, stored in
+  `LF.state.settings.notifCategories`.
+- **Notification actions**, where the browser supports them: upcoming/
+  starting/morning/evening get an **Open Calendar** action; remaining-
+  tasks gets **View Tasks**; overdue gets **Mark Done** (actually marks
+  the task complete, via a message to the open app or a `?markDone=` URL
+  param if the app had to open fresh). Platforms without action support
+  (iOS Safari) just fall back to a normal tap-to-open.
+- Fixed default check windows: morning briefing 8–11am, remaining-tasks
+  nudge from 1pm, progress update 5–9pm, evening wrap-up from 9pm — not
+  user-configurable yet, just the on/off toggles are. Say the word if
+  you'd like a time picker added later.
 
-## 4. Build review (GitHub Actions)
-- Java 17, Gradle 8.7, Android Gradle Plugin 8.5.2, compileSdk/targetSdk 34, minSdk 26: a combination that is documented as compatible. The runner's Android SDK is checked and the two needed packages are requested in the log.
-- Output: `app-debug.apk`, published under **Releases** and as a run artifact.
-- Signing: a fixed key included in the project (a personal, non-secret "debug" key) — the same on every build, so updates install over the old app. Fine for your own phone, not for the Play Store. A log step runs `apksigner verify` and prints the certificate.
-- Not verified: I could not run the build here. If it goes red, copy the red error text to me.
+**Scope note on the closed-app (tier C) path:** the best-effort Periodic
+Background Sync in `sw.js` still uses the simpler plain-reminder check,
+not the full Voice/Engine personality. Duplicating this much
+context-aware logic inside the service worker — which can only see an
+IndexedDB mirror, not your live app state — would add real complexity to
+a path that isn't guaranteed to run on most browsers anyway. Tiers A
+(open) and B (backgrounded) get the full creative system; tier C keeps
+working, just with simpler wording, until true Web Push is worth adding.
 
-## 5. Install (from your phone)
-1. GitHub → new **private** repository (e.g. `ghibli-calendar-android`).
-2. **Add file → Upload files** → upload `GhibliCalendarAndroid.zip` (as is).
-3. **Add file → Create new file**, name it exactly `.github/workflows/build-apk.yml`, paste the contents of `build-apk.yml`, **Commit**.
-4. Your calendar address is assumed to be `https://swagatgaikwad92-boop.github.io/Ghibli-Calander/` (taken from a comment in your code). If it's different: repo **Settings → Secrets and variables → Actions → Variables → New**: `SITE_URL` = your address.
-5. **Actions → Build Ghibli Calendar APK → Run workflow**. Wait for the green tick (about 5 minutes).
-6. **Releases → newest build → app-debug.apk** → download → install (allow "install unknown apps" for your browser).
-7. Later updates: upload a new zip with the same name; install the new APK over the old one.
+## Editing later
 
-## 6. Bring your data across (once)
-1. Add `export-data.html` to your website repo (new file only).
-2. In Chrome open `…/Ghibli-Calander/export-data.html` → **Download backup file**.
-3. Open the app → **Choose backup file** → pick `ghibli-calendar-backup.json`.
+Everything is one small file per concern, so most changes only touch one
+file:
+- Colors/fonts → `core.css`
+- Layout of cards, nav, calendar → `components.css`
+- What the mascot looks like → `companion.js`
+- Adding a new screen or button → `index.html` + `app.js`
 
-## 7. Test on your Vivo V25 (Funtouch OS 15)
-- Allow notifications. Add the widgets: long-press Home → Widgets → Ghibli Calendar.
-- Tap a circle in the widget → app shows the task done. Complete a task in the app → widget updates.
-- Large widget: `↑` and `→`; `‹ ›` change day. Board: drag across days, into Completed, empty day; close and reopen the board; check the widget each time.
-- Airplane mode: widgets still work; the app opens from cache (after one online start).
-- Vivo: Settings → Battery → Background power consumption → allow for Ghibli Calendar; allow Autostart. Otherwise refresh may pause.
-
-## 8. What was and was not tested
-**Tested (56 automated checks, `verification/RESULTS.txt`):** the real data/board logic code with simulated storage (26), the cloud-sync merge against simulated GitHub (22), the script injected into your website (8). XML files were checked for well-formedness and every resource reference for existence.
-**Not tested:** Gradle build, compilation against the real Android SDK (I only ran a limited consistency check), widget rendering, the finger drag, the WebView on your phone, real GitHub sync, Funtouch background behaviour. Expect that the first build may need one round of fixes.
-
-## Known gaps
-- Reminders show as Android notifications only while the app is alive in memory. Reminders while it's fully closed are not included.
-- Fraunces (your headline font) can't be used in a widget; a system serif stands in.
-- Tasks from earlier days that were never finished are not shown (same as your Today screen).
+Your data (tasks, events, journal entries) lives in the browser's
+`localStorage`, under the key `ghibliforest_v1` — clearing your browser
+data will clear it, so nothing to configure on the code side to keep it
+persisting normally.

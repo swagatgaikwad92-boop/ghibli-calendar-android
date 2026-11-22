@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check this install · Ghibli Calendar</title>
+<style>
+  :root{--ink:#3A362E;--soft:#6B6458;--paper:#F5F1E8;--card:#FBF8F2;--sage:#7A8D6B;--sage-deep:#5B7052;--terracotta:#C17B4A;--line:rgba(58,54,46,.10)}
+  @media (prefers-color-scheme:dark){:root{--ink:#EAE6D9;--soft:#C9C2B0;--paper:#1B211C;--card:#232B24;--line:rgba(234,230,217,.10)}}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:Georgia,"Times New Roman",serif;padding:22px 16px 40px;display:flex;justify-content:center}
+  main{max-width:460px;width:100%}
+  h1{font-size:24px;margin:0 0 4px}
+  p{color:var(--soft);line-height:1.5;font-size:15px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 16px;margin-top:14px}
+  .row{display:flex;justify-content:space-between;gap:10px;font-size:14px;padding:3px 0;word-break:break-all}
+  .ok{color:var(--sage-deep)} .bad{color:var(--terracotta);font-weight:bold}
+  code{font-size:13px;word-break:break-all}
+  button{width:100%;border:0;border-radius:999px;background:var(--sage);color:#fff;font:600 16px Georgia,serif;padding:13px;margin-top:12px}
+  #verdict{font-size:16px;line-height:1.5}
+</style>
+</head>
+<body>
+<main>
+  <h1>🔎 Check this install</h1>
+  <p>Looks for every file the calendar needs, in the same folder as this page. Nothing here changes your calendar data.</p>
+  <div class="card"><div id="verdict">Checking…</div></div>
+  <div class="card"><b>Where this page is</b><div class="row"><code id="where"></code></div></div>
+  <div class="card"><b>Files</b><div id="files"></div></div>
+  <div class="card"><b>Date &amp; time on this device</b><div id="clock"></div></div>
+  <div class="card"><b>Offline cache (service worker)</b><div id="sw"></div>
+    <button id="reset">Reset offline cache (keeps your calendar data)</button></div>
+  <p><a href="./" style="color:var(--sage-deep)">Open the calendar</a></p>
+</main>
+<script>
+(function () {
+  var NEEDED = ["index.html","core.css","components.css","themes.css","manifest.json","sw.js",
+    "dabsy-core.js","state.js","companion.js","calendar.js","tasks.js","search.js","render.js","notify.js","voice.js","engine.js","app.js",
+    "icon-180.png","icon-192.png","icon-512.png"];
+  function $(id){ return document.getElementById(id); }
+  function row(label, value, ok){ var d=document.createElement("div"); d.className="row";
+    d.innerHTML='<span></span><span class="'+(ok?"ok":"bad")+'"></span>'; d.children[0].textContent=label; d.children[1].textContent=value; return d; }
+
+  var base = location.href.replace(/[^\/]*$/, "");
+  $("where").textContent = base;
+
+  function checkFile(name) {
+    return fetch(base + name + "?_=" + Date.now(), { cache: "no-store" }).then(function (r) {
+      return { name: name, status: r.status, ok: r.ok };
+    }, function () { return { name: name, status: 0, ok: false }; });
+  }
+
+  Promise.all(NEEDED.map(checkFile)).then(function (res) {
+    var missing = res.filter(function (r) { return !r.ok; });
+    var box = $("files");
+    res.forEach(function (r) { box.appendChild(row(r.name, r.ok ? "found" : (r.status ? "NOT FOUND (" + r.status + ")" : "could not load"), r.ok)); });
+    if (missing.length === NEEDED.length) {
+      $("verdict").innerHTML = '<span class="bad">Nothing else is in this folder.</span> This page is in a folder that does not contain the calendar files. The calendar\'s <code>index.html</code> must sit in the SAME folder as <code>core.css</code>, <code>app.js</code> and the others. Move/upload the files so they are all together (see README).';
+    } else if (missing.length) {
+      $("verdict").innerHTML = '<span class="bad">' + missing.length + ' file(s) missing:</span> ' + missing.map(function (m) { return m.name; }).join(", ") + '. Upload them into this folder. Without the style and script files the calendar shows plain unstyled text and a placeholder date.';
+    } else {
+      $("verdict").innerHTML = '<span class="ok">All files found.</span> If the calendar still looks unstyled, the phone is showing an old saved copy — press <b>Reset offline cache</b> below, then open the calendar twice.';
+    }
+  });
+
+  // date / time
+  var now = new Date(), tz = "";
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+  function pad(n){ return String(n).padStart(2, "0"); }
+  var local = now.getFullYear() + "-" + pad(now.getMonth() + 1) + "-" + pad(now.getDate());
+  $("clock").appendChild(row("Date the calendar uses", local, true));
+  $("clock").appendChild(row("Time", pad(now.getHours()) + ":" + pad(now.getMinutes()), true));
+  $("clock").appendChild(row("Time zone", (tz || "unknown") + " (UTC" + (now.getTimezoneOffset() <= 0 ? "+" : "-") + Math.abs(now.getTimezoneOffset() / 60) + ")", true));
+  $("clock").appendChild(row("UTC date (not used)", now.toISOString().slice(0, 10), true));
+
+  // service worker
+  function refreshSW() {
+    var box = $("sw"); box.innerHTML = "";
+    if (!("serviceWorker" in navigator)) { box.appendChild(row("Service worker", "not supported", false)); return; }
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      box.appendChild(row("Registrations", String(regs.length), true));
+      regs.forEach(function (r) { box.appendChild(row("scope", r.scope, true)); });
+    });
+    if (window.caches) caches.keys().then(function (keys) { box.appendChild(row("Caches", keys.length ? keys.join(", ") : "none", true)); });
+  }
+  refreshSW();
+  $("reset").onclick = function () {
+    var jobs = [];
+    if ("serviceWorker" in navigator) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); }));
+    if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); }));
+    Promise.all(jobs).then(function () { $("reset").textContent = "Done ✓ — now open the calendar"; refreshSW(); });
+  };
+})();
+</script>
+</body>
+</html>

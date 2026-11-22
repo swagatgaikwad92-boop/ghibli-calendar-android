@@ -1,4 +1,4 @@
-const S = require('../optional-website-sync/sync.js');
+const S = require('../website-with-sync/sync.js');
 let pass=0, fail=0;
 const ok=(n,c)=>{ if(c){pass++;console.log('PASS  '+n);} else {fail++;console.log('FAIL  '+n);} };
 

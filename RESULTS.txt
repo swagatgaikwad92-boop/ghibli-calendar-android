@@ -65,3 +65,8 @@ PASS  Notification.requestPermission resolves
 PASS  registration.showNotification becomes an Android notification
 
 8 passed, 0 failed
+
+== Diagnostic page verdict logic (fake browser) ==
+PASS all present
+PASS wrong folder detected
+PASS partial missing listed
